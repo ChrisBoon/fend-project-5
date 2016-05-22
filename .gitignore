@@ -53,3 +53,4 @@ Temporary Items
 bower_components/
 images-src/
 app/css/
+_private_keys.js

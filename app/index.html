@@ -18,13 +18,26 @@
         <![endif]-->
 
         <!-- Add your site or application content here -->
-        <p>My Neighborhood.</p>
+        <div class="app-header">
+          <h1>My Neighborhood.</h1>
+        </div>
+
+
+   <div id="map"></div>
+
 
         <!-- bower:js -->
         <script src="../bower_components/knockout/dist/knockout.js"></script>
         <script src="../bower_components/jquery/dist/jquery.js"></script>
         <!-- endbower -->
         <script src="scripts/build/app.min.js"></script>
+
+        <script>
+
+        </script>
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuGXx-TJJQH960LLtYGhrq4AdUrK1t-nw&callback=myMap.render"
+        async defer></script>
+
 
     </body>
 </html>

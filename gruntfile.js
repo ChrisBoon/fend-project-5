@@ -18,7 +18,7 @@ module.exports = function (grunt) {
 
             scripts: {
                 files: ['app/scripts/custom/**/*.js'],
-                tasks: ['jshint'],
+                tasks: ['jshint','concat','uglify'],
                 options: {
                     spawn: false
                 },
@@ -66,11 +66,25 @@ module.exports = function (grunt) {
               myFiles: ['app/scripts/custom/**/*.js']
         },
 
+        concat: {
+            dist: {
+                src: ['app/scripts/custom/*.js'],
+                dest: 'app/scripts/build/app.js'
+            }
+        },
+
+        uglify: {
+            dist: {
+                src: 'app/scripts/build/app.js',
+                dest: 'app/scripts/build/app.min.js'
+            }
+        },
 
         browserSync: {
             dev: {
                 bsFiles: {
                     src : [
+                        'app/scripts/build/app.min.js',
                         'app/css/*.css',
                         'app/*.html'
                     ]
@@ -87,6 +101,8 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-sass');
     grunt.loadNpmTasks('grunt-postcss');
     grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-imagemin');
     grunt.loadNpmTasks('grunt-newer');
     grunt.loadNpmTasks('grunt-contrib-watch');

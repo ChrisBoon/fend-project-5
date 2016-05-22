@@ -91,7 +91,12 @@ module.exports = function (grunt) {
                 },
                 options: {
                     watchTask: true,
-                    server: './app'
+                    server: {
+                        baseDir: "./app",
+                        routes: {
+                            "/bower_components": "bower_components"
+                        }
+                    }
                 }
             }
         }
@@ -110,5 +115,5 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-browser-sync');
 
     // define default task
-    grunt.registerTask('default', ['browserSync', 'watch']);
+    grunt.registerTask('default', ['wiredep', 'browserSync', 'watch']);
 };

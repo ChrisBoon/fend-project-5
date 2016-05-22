@@ -49,5 +49,7 @@ Temporary Items
 .apdisk
 
 # Project specific:
+
 bower_components/
 images-src/
+app/css/

@@ -70,83 +70,66 @@ var model = {
       "tags": ["restaurant", "italian", "pizza"],
       "specialty": "Pizza"
     }
-
-
   ]
 };
 
-var Map = function(elemId, elemLat, elemlng) {
-  this.map = null;
-  this.elemId = elemId;
-  this.testID = "ChIJYY8P-LBQwokRDC9_6cTfrW8";
-  this.styles = [
-    {
-      "featureType": "poi.business",
-      "stylers": [
-        { "visibility": "off" }
-      ]
-    },{
-      "featureType": "water",
-      "stylers": [
-        { "color": "#5c7d85" }
-      ]
-    },{
-      "featureType": "road",
-      "elementType": "geometry.fill",
-      "stylers": [
-        { "visibility": "on" },
-        { "saturation": 100 },
-        { "lightness": -37 },
-        { "hue": "#0077ff" },
-        { "color": "#c8d5e3" }
-      ]
-    },{
-      "featureType": "landscape.man_made",
-      "stylers": [
-        { "hue": "#ff00d4" },
-        { "gamma": 9.99 }
-      ]
-    },{
-      "featureType": "road",
-      "elementType": "geometry.stroke",
-      "stylers": [
-        { "visibility": "off" }
-      ]
-    },{
-      "elementType": "labels",
-      "stylers": [
-        { "visibility": "off" }
-      ]
-    },{
-      "featureType": "poi.park",
-      "elementType": "geometry",
-      "stylers": [
-        { "visibility": "on" },
-        { "color": "#d8e0d3" }
-      ]
-    }
-  ];
-  this.options = {
-    center: {lat: elemLat, lng: elemlng},
+var map;
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
     zoom: 15,
-    styles: this.styles
-  };
+    center: {lat: 40.7202, lng: -74.0453}
+  });
+  ko.applyBindings(new ViewModel());
+}
 
+var aPlace = function(data) {
+  this.title = ko.observable(data.title);
 };
 
-Map.prototype.render = function() {
-  this.map = new google.maps.Map(this.elemId, this.options);
-  this.markers();
-};
 
-Map.prototype.markers = function(){
-  for (var i = model.myPlaces.length - 1; i >= 0; i--) {
+var ViewModel = function(){
+  var self = this;
+
+  this.allPlaces = ko.observableArray([]);
+
+  this.filter = ko.observable("");
+
+  model.myPlaces.forEach(function(thisPlace){
+    self.allPlaces.push( new aPlace(thisPlace));
+  });
+
+  this.allPlaces().forEach(function(myItem,i){
     var marker = new google.maps.Marker({
       position: {lat: model.myPlaces[i].lat, lng: model.myPlaces[i].lng},
-      map: this.map,
+      map: map,
       title: model.myPlaces[i].title
     });
-  }
+    myItem.marker = marker;
+  });
+
+
+  this.filteredItems = ko.computed(function() {
+    var filter = this.filter().toLowerCase();
+    if (!filter) {
+      return ko.utils.arrayFilter(this.allPlaces(), function(item) {
+          item.marker.setVisible(true);
+              return true;
+      });
+    }
+
+    return ko.utils.arrayFilter(this.allPlaces(), function(item) {
+      if (item.title().toLowerCase().indexOf(filter) > -1) {
+        item.marker.setVisible(true);
+        return true;
+      } else {
+        item.marker.setVisible(false);
+        return false;
+      }
+    });
+
+  }, this);
+
+
 };
 
-var myMap = new Map(document.getElementById('map'), 40.7202, -74.0453);

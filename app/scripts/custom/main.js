@@ -121,6 +121,7 @@ var ViewModel = function(){
   };
 
   this.update = function(){
+    var deferred = $.Deferred();
     // function for filtering markers and list items based on search field
     this.filteredItems = ko.computed(function() {
       var filter = simplifyTitle(self.searchFor());
@@ -129,7 +130,9 @@ var ViewModel = function(){
         //for each item in this.allPlaces:
         return ko.utils.arrayFilter(self.allPlaces(), function(item) {
           //make marker visible
-          item.marker.setVisible(true);
+          if (item.marker) {
+            item.marker.setVisible(true);
+          }
           // keep in list
           return true;
         });
@@ -149,6 +152,7 @@ var ViewModel = function(){
       });
 
     });
+    return deferred.promise();
 
   };
 
@@ -178,6 +182,7 @@ var ViewModel = function(){
 
   // function to create the map:
   this.createMap = function(){
+    var deferred = $.Deferred();
     self.map = new google.maps.Map(document.getElementById('map'), {
       zoom: 15,
       center: {lat: 40.7202, lng: -74.0453}
@@ -185,38 +190,63 @@ var ViewModel = function(){
     self.infowindow = new google.maps.InfoWindow({
       content: "contentString"
     });
+    return deferred.promise();
   };
 
   this.createList = function(){
+    var deferred = $.Deferred();
     // function to take JSON places and add as observables into this.allPlaces observable array
     model.myPlaces.forEach(function(thisPlace){
       self.allPlaces.push( new self.aPlace(thisPlace));
     });
     // function to run through the this.allPlaces observable array and create a Map Marker for each one
+
+
+    return deferred.promise();
+  };
+
+  this.createMarkers = function(){
+    var deferred = $.Deferred();
+
     self.allPlaces().forEach(function(myItem,i){
-      var marker = new google.maps.Marker({
-        position: {lat: model.myPlaces[i].lat, lng: model.myPlaces[i].lng},
-        map: self.map,
-        title: model.myPlaces[i].title
-      });
-
-      // adding event listener when making markers:
-      marker.addListener('click', function() {
-        self.selectPlace(marker,model.myPlaces[i].foursquare);
-      });
-      myItem.marker = marker;
-
+      addMarkerWithTimeout(myItem,i, i * 150);
     });
 
+    function addMarkerWithTimeout(myItem, i, timeout){
+      window.setTimeout(function() {
+        var marker = new google.maps.Marker({
+          position: {lat: model.myPlaces[i].lat, lng: model.myPlaces[i].lng},
+          animation: google.maps.Animation.DROP,
+          map: self.map,
+          title: model.myPlaces[i].title
+        });
 
+        // adding event listener when making markers:
+        marker.addListener('click', function() {
+          self.selectPlace(marker,model.myPlaces[i].foursquare);
+        });
+        myItem.marker = marker;
+      }, timeout);
+    }
+
+    return deferred.promise();
   };
 
   this.init = function(){
-    self.createMap();
-    self.createList();
-    self.update();
-
+    var d = jQuery.Deferred(),
+    p=d.promise();
+    p.then(
+      self.createMap()
+    ).then(
+      self.createList()
+    ).then(
+      self.update()
+    ).then(
+      self.createMarkers()
+    );
+    d.resolve();
   };
+
   //call init
   this.init();
 };

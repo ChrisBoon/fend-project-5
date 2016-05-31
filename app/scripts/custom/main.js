@@ -1,3 +1,6 @@
+var CLIENT_ID = 'MNLX5UCWNCVOONDL1JUOVCPPTJD1V4UTATUBYCEL5VACWBC3';
+var CLIENT_SECRET = 'GMKFEK4K1GT34QW1D1YVLRBWDK0KJRG3JT5VT14G4HIS10FN';
+
 // My list of places
 //// Eventually move to an AJAX call
 var model = {
@@ -7,70 +10,80 @@ var model = {
       "lat": 40.721061,
       "lng": -74.046622,
       "tags": ["restaurant", "italian", "takeout", "byob"],
-      "specialty": "Freshly made pasta"
+      "specialty": "Freshly made pasta",
+      "foursquare": "545d4fcd498e167b11481c30"
     },
     {
       "title": "Prato Bakery",
       "lat": 40.723577,
       "lng": -74.044205,
       "tags": ["bakery", "coffee shop", "italian", "takeout"],
-      "specialty": "Cantuccini"
+      "specialty": "Cantuccini",
+      "foursquare": "54fb1694498e727051f154cc"
     },
     {
       "title": "Brownstone Diner & Pancake Factory",
       "lat": 40.716721,
       "lng": -74.048564,
       "tags": ["restaurant", "diner", "american"],
-      "specialty": "Pancakes"
+      "specialty": "Pancakes",
+      "foursquare": "4b0ec3c7f964a520b25a23e3"
     },
     {
       "title": "Taqueria Downtown",
       "lat": 40.716275,
       "lng": -74.044635,
       "tags": ["restaurant", "mexican", "takeout"],
-      "specialty": "Tacos"
+      "specialty": "Tacos",
+      "foursquare": "49d78123f964a5202c5d1fe3"
     },
     {
       "title": "New York Bagel Cafe and Deli",
       "lat": 40.721898,
       "lng": -74.047104,
       "tags": ["diner", "american", "takeout"],
-      "specialty": "Bagels"
+      "specialty": "Bagels",
+      "foursquare": "4f900989e4b0324e976f087b"
     },
     {
       "title": "Two Boots Pizza Jersey City",
       "lat": 40.720154,
       "lng": -74.043624,
       "tags": ["restaurant", "italian", "takeout", "pizza"],
-      "specialty": "Pizza"
+      "specialty": "Pizza",
+      "foursquare": "4f4287ecc2ee912d136a3b50"
     },
     {
       "title": "Porta",
       "lat": 40.720205,
       "lng": -74.043702,
       "tags": ["restaurant", "italian", "pizza"],
-      "specialty": "Pizza"
+      "specialty": "Pizza",
+      "foursquare": "54764818498e156b22125771"
     },
     {
       "title": "ME Casa",
       "lat": 40.720911,
       "lng": -74.048153,
       "tags": ["restaurant", "takeout", "puerto-rican", "byob"],
-      "specialty": "Pernil Asado and Mofongo"
+      "specialty": "Pernil Asado and Mofongo",
+      "foursquare": "4fb82303e4b00fea2b7dde56"
     },
     {
       "title": "Cafe Batata",
       "lat": 40.723184,
       "lng": -74.050460,
       "tags": ["restaurant", "mexican", "takeout"],
-      "specialty": "Batata"
+      "specialty": "Batata",
+      "foursquare": "56a8e74c498efbea47c86247"
     },
     {
       "title": "Razza",
       "lat": 40.717752,
       "lng": -74.044254,
       "tags": ["restaurant", "italian", "pizza"],
-      "specialty": "Pizza"
+      "specialty": "Pizza",
+      "foursquare": "5070e64ee4b07e6d88738ffb"
     }
   ]
 };
@@ -91,8 +104,9 @@ var ViewModel = function(){
   var self = this;
 
   // set up variable that the map will be stored on:
-  var map = null;
-
+  var map;
+  var infowindow;
+  var selectedPlace = false;
   // Set up an observable array for storing each place observable:
   this.allPlaces = ko.observableArray([]);
 
@@ -103,6 +117,7 @@ var ViewModel = function(){
   // Reusable function used to turn each place in my JSON to a knockout observable
   this.aPlace = function(data) {
     this.title = ko.observable(data.title);
+    this.foursquare = data.foursquare;
   };
 
   this.update = function(){
@@ -137,11 +152,38 @@ var ViewModel = function(){
 
   };
 
+
+
+  this.selectPlace = function(marker,thisPlace){
+    //get the itrms foursquare ID:
+    var venueId = thisPlace;
+    //ajax it
+    var API_ENDPOINT = 'https://api.foursquare.com/v2/venues/' + venueId + '?&client_id=' + CLIENT_ID + '&client_secret=' + CLIENT_SECRET + '&v=20160529';
+    var jqxhr = $.getJSON(API_ENDPOINT, function(result, status) {
+      console.log( status );
+      self.selectedPlace = result.response.venue;
+    })
+    .done( function(){
+      self.infowindow.setContent(self.selectedPlace.name);
+      self.infowindow.open(self.map, marker);
+    })
+    .fail( function(){
+      console.log("PROBABLY ADD ERROR HANDLING HERE");
+    });
+  };
+
+  this.triggerPlaceFromList = function(data){
+    self.selectPlace(data.marker, data.foursquare);
+  };
+
   // function to create the map:
   this.createMap = function(){
     self.map = new google.maps.Map(document.getElementById('map'), {
       zoom: 15,
       center: {lat: 40.7202, lng: -74.0453}
+    });
+    self.infowindow = new google.maps.InfoWindow({
+      content: "contentString"
     });
   };
 
@@ -157,8 +199,15 @@ var ViewModel = function(){
         map: self.map,
         title: model.myPlaces[i].title
       });
+
+      // adding event listener when making markers:
+      marker.addListener('click', function() {
+        self.selectPlace(marker,model.myPlaces[i].foursquare);
+      });
       myItem.marker = marker;
+
     });
+
 
   };
 
@@ -179,13 +228,4 @@ var initApp = function(){
 
 //foursquare testing:
 
-var CLIENT_ID = 'MNLX5UCWNCVOONDL1JUOVCPPTJD1V4UTATUBYCEL5VACWBC3';
-var CLIENT_SECRET = 'GMKFEK4K1GT34QW1D1YVLRBWDK0KJRG3JT5VT14G4HIS10FN';
-var venueId = '54fb1694498e727051f154cc';
-var API_ENDPOINT = 'https://api.foursquare.com/v2/venues/' + venueId + '?&client_id=' + CLIENT_ID + '&client_secret=' + CLIENT_SECRET + '&v=20160529';
-$.getJSON(API_ENDPOINT, function(result, status) {
 
-
-    console.log(status);
-    console.log(result.response.venue.name);
-});

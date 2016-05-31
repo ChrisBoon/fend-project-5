@@ -25,7 +25,7 @@
     <div class="sidebar">
       <input data-bind="value: searchFor, valueUpdate: 'afterkeydown'"placeholder="Search...">
       <ul data-bind="foreach: filteredItems">
-        <li data-bind="text:title"></li>
+        <li data-bind="click: $parent.triggerPlaceFromList,text:title"></li>
       </ul>
     </div>
 

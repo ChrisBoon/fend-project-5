@@ -107,7 +107,10 @@ var ViewModel = function(){
   var map;
   var infowindow;
   var selectedPlace = false;
-  var selectedLocation = ko.observable();
+  this.selectedLocation = ko.observable("");
+  this.selectedName = ko.observable("");
+
+
   // Set up an observable array for storing each place observable:
   this.allPlaces = ko.observableArray([]);
 
@@ -118,6 +121,7 @@ var ViewModel = function(){
   // Reusable function used to turn each place in my JSON to a knockout observable
   this.aPlace = function(data) {
     this.title = ko.observable(data.title);
+    this.active = ko.observable("");
     this.foursquare = data.foursquare;
   };
 
@@ -158,8 +162,14 @@ var ViewModel = function(){
   };
 
 
+  this.showData = function(data){
+    if (self.selectedLocation.marker) {
+      self.closeLocation();
+    }
+    self.selectedLocation = data;
+    self.selectedName(data.title());
 
-  this.showData = function(){
+    console.log(self.selectedName());
     //get the itrms foursquare ID:
     var venueId = self.selectedLocation.foursquare;
     //ajax it
@@ -172,6 +182,7 @@ var ViewModel = function(){
       self.infowindow.setContent(self.selectedLocation.title());
       self.infowindow.open(self.map, self.selectedLocation.marker);
       self.selectedLocation.marker.setAnimation(google.maps.Animation.BOUNCE);
+      self.selectedLocation.active = true;
     })
     .fail( function(){
       console.log("PROBABLY ADD ERROR HANDLING HERE");
@@ -179,9 +190,8 @@ var ViewModel = function(){
   };
 
   this.triggerPlaceFromList = function(data){
-    self.selectedLocation = data;
-    self.showData();
-
+    self.showData(data);
+    console.log(self.selectedName());
   };
 
   // function to create the map:
@@ -195,7 +205,6 @@ var ViewModel = function(){
 
     });
     google.maps.event.addListener(self.infowindow, 'closeclick',function(){
-      console.log("byeees");
       self.closeLocation();
     });
 
@@ -232,10 +241,8 @@ var ViewModel = function(){
 
         // adding event listener when making markers:
         marker.addListener('click', function() {
-          self.selectedLocation = myItem;
-          self.showData();
+          self.showData(myItem);
         });
-
         myItem.marker = marker;
       }, timeout);
     }
@@ -244,7 +251,6 @@ var ViewModel = function(){
   };
 
   this.closeLocation = function(){
-    console.log("byee");
     self.selectedLocation.marker.setAnimation(null);
   };
 

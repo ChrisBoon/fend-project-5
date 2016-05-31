@@ -107,6 +107,7 @@ var ViewModel = function(){
   var map;
   var infowindow;
   var selectedPlace = false;
+  var selectedLocation = ko.observable();
   // Set up an observable array for storing each place observable:
   this.allPlaces = ko.observableArray([]);
 
@@ -158,9 +159,9 @@ var ViewModel = function(){
 
 
 
-  this.selectPlace = function(marker,thisPlace){
+  this.showData = function(){
     //get the itrms foursquare ID:
-    var venueId = thisPlace;
+    var venueId = self.selectedLocation.foursquare;
     //ajax it
     var API_ENDPOINT = 'https://api.foursquare.com/v2/venues/' + venueId + '?&client_id=' + CLIENT_ID + '&client_secret=' + CLIENT_SECRET + '&v=20160529';
     var jqxhr = $.getJSON(API_ENDPOINT, function(result, status) {
@@ -168,8 +169,9 @@ var ViewModel = function(){
       self.selectedPlace = result.response.venue;
     })
     .done( function(){
-      self.infowindow.setContent(self.selectedPlace.name);
-      self.infowindow.open(self.map, marker);
+      self.infowindow.setContent(self.selectedLocation.title());
+      self.infowindow.open(self.map, self.selectedLocation.marker);
+      self.selectedLocation.marker.setAnimation(google.maps.Animation.BOUNCE);
     })
     .fail( function(){
       console.log("PROBABLY ADD ERROR HANDLING HERE");
@@ -177,7 +179,9 @@ var ViewModel = function(){
   };
 
   this.triggerPlaceFromList = function(data){
-    self.selectPlace(data.marker, data.foursquare);
+    self.selectedLocation = data;
+    self.showData();
+
   };
 
   // function to create the map:
@@ -188,8 +192,13 @@ var ViewModel = function(){
       center: {lat: 40.7202, lng: -74.0453}
     });
     self.infowindow = new google.maps.InfoWindow({
-      content: "contentString"
+
     });
+    google.maps.event.addListener(self.infowindow, 'closeclick',function(){
+      console.log("byeees");
+      self.closeLocation();
+    });
+
     return deferred.promise();
   };
 
@@ -223,13 +232,20 @@ var ViewModel = function(){
 
         // adding event listener when making markers:
         marker.addListener('click', function() {
-          self.selectPlace(marker,model.myPlaces[i].foursquare);
+          self.selectedLocation = myItem;
+          self.showData();
         });
+
         myItem.marker = marker;
       }, timeout);
     }
 
     return deferred.promise();
+  };
+
+  this.closeLocation = function(){
+    console.log("byee");
+    self.selectedLocation.marker.setAnimation(null);
   };
 
   this.init = function(){

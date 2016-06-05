@@ -166,12 +166,12 @@ var ViewModel = function(){
     if (self.selectedLocation.marker) {
       self.closeLocation();
     }
-    self.selectedLocation = data;
+    self.selectedLocation(data);
     self.selectedName(data.title());
 
     console.log(self.selectedName());
     //get the itrms foursquare ID:
-    var venueId = self.selectedLocation.foursquare;
+    var venueId = self.selectedLocation().foursquare;
     //ajax it
     var API_ENDPOINT = 'https://api.foursquare.com/v2/venues/' + venueId + '?&client_id=' + CLIENT_ID + '&client_secret=' + CLIENT_SECRET + '&v=20160529';
     var jqxhr = $.getJSON(API_ENDPOINT, function(result, status) {
@@ -179,10 +179,10 @@ var ViewModel = function(){
       self.selectedPlace = result.response.venue;
     })
     .done( function(){
-      self.infowindow.setContent(self.selectedLocation.title());
-      self.infowindow.open(self.map, self.selectedLocation.marker);
-      self.selectedLocation.marker.setAnimation(google.maps.Animation.BOUNCE);
-      self.selectedLocation.active = true;
+      self.infowindow.setContent(self.selectedLocation().title());
+      self.infowindow.open(self.map, self.selectedLocation().marker);
+      self.selectedLocation().marker.setAnimation(google.maps.Animation.BOUNCE);
+      self.selectedLocation().active = true;
     })
     .fail( function(){
       console.log("PROBABLY ADD ERROR HANDLING HERE");
@@ -251,7 +251,9 @@ var ViewModel = function(){
   };
 
   this.closeLocation = function(){
-    self.selectedLocation.marker.setAnimation(null);
+    self.selectedLocation().marker.setAnimation(null);
+    self.selectedLocation(null);
+    self.selectedName(null);
   };
 
   this.init = function(){

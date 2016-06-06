@@ -6,95 +6,69 @@ var CLIENT_SECRET = 'GMKFEK4K1GT34QW1D1YVLRBWDK0KJRG3JT5VT14G4HIS10FN';
 var model = {
   myPlaces: [
     {
-      "title": "Pasta Dal Cuore",
-      "lat": 40.721061,
-      "lng": -74.046622,
-      "tags": ["restaurant", "italian", "takeout", "byob"],
-      "specialty": "Freshly made pasta",
-      "foursquare": "545d4fcd498e167b11481c30"
-    },
-    {
       "title": "Prato Bakery",
       "lat": 40.723577,
       "lng": -74.044205,
-      "tags": ["bakery", "coffee shop", "italian", "takeout"],
-      "specialty": "Cantuccini",
       "foursquare": "54fb1694498e727051f154cc"
     },
     {
       "title": "Brownstone Diner & Pancake Factory",
       "lat": 40.716721,
       "lng": -74.048564,
-      "tags": ["restaurant", "diner", "american"],
-      "specialty": "Pancakes",
       "foursquare": "4b0ec3c7f964a520b25a23e3"
     },
     {
       "title": "Taqueria Downtown",
       "lat": 40.716275,
       "lng": -74.044635,
-      "tags": ["restaurant", "mexican", "takeout"],
-      "specialty": "Tacos",
       "foursquare": "49d78123f964a5202c5d1fe3"
     },
     {
-      "title": "New York Bagel Cafe and Deli",
-      "lat": 40.721898,
-      "lng": -74.047104,
-      "tags": ["diner", "american", "takeout"],
-      "specialty": "Bagels",
-      "foursquare": "4f900989e4b0324e976f087b"
-    },
-    {
-      "title": "Two Boots Pizza Jersey City",
+      "title": "Two Boots Jersey City",
       "lat": 40.720154,
       "lng": -74.043624,
-      "tags": ["restaurant", "italian", "takeout", "pizza"],
-      "specialty": "Pizza",
       "foursquare": "4f4287ecc2ee912d136a3b50"
     },
     {
       "title": "Porta",
       "lat": 40.720205,
       "lng": -74.043702,
-      "tags": ["restaurant", "italian", "pizza"],
-      "specialty": "Pizza",
       "foursquare": "54764818498e156b22125771"
     },
     {
-      "title": "ME Casa",
+      "title": "Me Casa",
       "lat": 40.720911,
       "lng": -74.048153,
-      "tags": ["restaurant", "takeout", "puerto-rican", "byob"],
-      "specialty": "Pernil Asado and Mofongo",
       "foursquare": "4fb82303e4b00fea2b7dde56"
     },
     {
       "title": "Cafe Batata",
       "lat": 40.723184,
       "lng": -74.050460,
-      "tags": ["restaurant", "mexican", "takeout"],
-      "specialty": "Batata",
       "foursquare": "56a8e74c498efbea47c86247"
     },
     {
       "title": "Razza",
       "lat": 40.717752,
       "lng": -74.044254,
-      "tags": ["restaurant", "italian", "pizza"],
-      "specialty": "Pizza",
       "foursquare": "5070e64ee4b07e6d88738ffb"
+    },
+    {
+      "title": "I throw an error",
+      "lat": 40.715,
+      "lng": -74.038,
+      "foursquare": "notAValidID"
     }
   ]
 };
 
+var mapStyles = [{"elementType":"labels","stylers":[{"visibility":"off"}]},{"elementType":"geometry","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"visibility":"on"},{"color":"#000000"}]},{"featureType":"landscape","stylers":[{"color":"#ffffff"},{"visibility":"on"}]},{}];
 
 
-//function to remove all spaces and turn a string to lower case:
+// Function to remove all spaces and turn a string to lower case:
 var simplifyTitle = function(str){
   return str.toLowerCase().replace(/\s+/g, '');
 };
-
 
 
 // app viewModel
@@ -103,13 +77,25 @@ var ViewModel = function(){
   // create alias for easy referencing:
   var self = this;
 
-  // set up variable that the map will be stored on:
+  // set up variables that the map and infowindow will be stored on:
   var map;
   var infowindow;
-  var selectedPlace = false;
-  this.selectedLocation = ko.observable("");
-  this.selectedName = ko.observable("");
 
+  //keep a reference to all markers so fitBounds can be calculated
+  this.markers = ko.observableArray([]);
+  var markerBounds;
+
+  // We will store current foursquare data to selectedPlace variable:
+  this.selectedPlace = ko.observable(false);
+
+  // We will use an observable to track which of the current locations is being interacted with:
+  this.selectedLocation = ko.observable("");
+
+  // Building the map markers requires the initial data to be read.
+  // On the unlikely chance the map is ready to build before knockout has parsed the list data
+  // I am storing a deferred which the list init will resolve.
+  // The map will not init until the deferred has resolved
+  this.dataReady = jQuery.Deferred();
 
   // Set up an observable array for storing each place observable:
   this.allPlaces = ko.observableArray([]);
@@ -118,15 +104,87 @@ var ViewModel = function(){
   //// On load we have an empty string.
   this.searchFor = ko.observable("");
 
+  this.error = ko.observable(null);
+  var mapCheck;
+  this.mapFail = ko.observable(false);
+
+
+
   // Reusable function used to turn each place in my JSON to a knockout observable
   this.aPlace = function(data) {
     this.title = ko.observable(data.title);
-    this.active = ko.observable("");
     this.foursquare = data.foursquare;
   };
 
-  this.update = function(){
-    var deferred = $.Deferred();
+  // Function to set selected item as currently viewed one
+  // called by clicking a marker or list item
+  this.showData = function(data){
+    // If a location is already open we close it:
+    if (self.selectedLocation()) {
+      self.selectedLocation().marker.setAnimation(null);
+    }
+    // We set this location as open:
+    self.selectedLocation(data);
+
+    //get the items foursquare ID:
+    var venueId = self.selectedLocation().foursquare;
+    //ajax it:
+    var API_ENDPOINT = 'https://api.foursquare.com/v2/venues/' + venueId + '?&client_id=' + CLIENT_ID + '&client_secret=' + CLIENT_SECRET + '&v=20160529';
+    var request = $.ajax({
+      dataType: "json",
+      url: API_ENDPOINT,
+      timeout: 2000,
+      success: function(response) {
+        self.selectedPlace(response.response.venue);
+      }
+    }).done( function(response){
+      self.error(null);
+      //center map on selected place:
+      self.map.panTo(self.selectedLocation().marker.getPosition());
+      //add the selected places title to infowindow, show it, and bounce te marker:
+      self.infowindow.setContent(self.selectedLocation().title());
+      self.infowindow.open(self.map, self.selectedLocation().marker);
+      self.selectedLocation().marker.setAnimation(google.maps.Animation.BOUNCE);
+    })
+    .fail( function( xhr, status ) {
+      self.closeLocation();
+      self.infowindow.close();
+      // self.error(true);
+      console.log(status);
+      if( status == "timeout" ) {
+          self.error("Foursquare could not be reached right now.");
+      }
+      if( status == "error" ) {
+          self.error("Sorry, there was a problem getting data for this location.");
+      }
+    });
+
+  };
+
+  // Function triggered when user clicks on a list item:
+  this.triggerPlaceFromList = function(data){
+    self.showData(data);
+
+  };
+
+  // Function to remove any active location:
+  this.closeLocation = function(){
+    self.selectedLocation().marker.setAnimation(null);
+    self.selectedLocation(null);
+    self.selectedPlace(false);
+  };
+
+  // function to take JSON places and add as observables into this.allPlaces observable array
+  // called by self.initList()
+  this.createListObservable = function(){
+    model.myPlaces.forEach(function(thisPlace){
+      self.allPlaces.push( new self.aPlace(thisPlace));
+    });
+    this.filteredItems = self.allPlaces;
+  };
+
+  // Function called on load to allow user to filter list by typing in input:
+  this.initFilter = function(){
     // function for filtering markers and list items based on search field
     this.filteredItems = ko.computed(function() {
       var filter = simplifyTitle(self.searchFor());
@@ -157,127 +215,103 @@ var ViewModel = function(){
       });
 
     });
-    return deferred.promise();
 
-  };
-
-
-  this.showData = function(data){
-    if (self.selectedLocation.marker) {
-      self.closeLocation();
-    }
-    self.selectedLocation(data);
-    self.selectedName(data.title());
-
-    console.log(self.selectedName());
-    //get the itrms foursquare ID:
-    var venueId = self.selectedLocation().foursquare;
-    //ajax it
-    var API_ENDPOINT = 'https://api.foursquare.com/v2/venues/' + venueId + '?&client_id=' + CLIENT_ID + '&client_secret=' + CLIENT_SECRET + '&v=20160529';
-    var jqxhr = $.getJSON(API_ENDPOINT, function(result, status) {
-      console.log( status );
-      self.selectedPlace = result.response.venue;
-    })
-    .done( function(){
-      self.infowindow.setContent(self.selectedLocation().title());
-      self.infowindow.open(self.map, self.selectedLocation().marker);
-      self.selectedLocation().marker.setAnimation(google.maps.Animation.BOUNCE);
-      self.selectedLocation().active = true;
-    })
-    .fail( function(){
-      console.log("PROBABLY ADD ERROR HANDLING HERE");
-    });
-  };
-
-  this.triggerPlaceFromList = function(data){
-    self.showData(data);
-    console.log(self.selectedName());
   };
 
   // function to create the map:
+  // called by self.initMap()
   this.createMap = function(){
-    var deferred = $.Deferred();
+
     self.map = new google.maps.Map(document.getElementById('map'), {
       zoom: 15,
-      center: {lat: 40.7202, lng: -74.0453}
+      center: {lat: 40.7202, lng: -74.0453},
+      styles: mapStyles
     });
-    self.infowindow = new google.maps.InfoWindow({
+    self.infowindow = new google.maps.InfoWindow({});
+    self.markerBounds = new google.maps.LatLngBounds();
 
-    });
     google.maps.event.addListener(self.infowindow, 'closeclick',function(){
       self.closeLocation();
     });
 
-    return deferred.promise();
   };
 
-  this.createList = function(){
-    var deferred = $.Deferred();
-    // function to take JSON places and add as observables into this.allPlaces observable array
-    model.myPlaces.forEach(function(thisPlace){
-      self.allPlaces.push( new self.aPlace(thisPlace));
-    });
-    // function to run through the this.allPlaces observable array and create a Map Marker for each one
-
-
-    return deferred.promise();
-  };
-
+  // Function to create map markers from observable array of places.
+  // called by self.initMap()
   this.createMarkers = function(){
-    var deferred = $.Deferred();
 
+    // Loop through each array item witha timeout to add a staggered drop effect:
     self.allPlaces().forEach(function(myItem,i){
-      addMarkerWithTimeout(myItem,i, i * 150);
+      var marker = new google.maps.Marker({
+        position: {lat: model.myPlaces[i].lat, lng: model.myPlaces[i].lng},
+        animation: google.maps.Animation.DROP,
+        map: self.map,
+        title: model.myPlaces[i].title
+      });
+
+      // Adding event listener when making markers:
+      marker.addListener('click', function() {
+        self.showData(myItem);
+      });
+
+      // Add marker to allPlaces item:
+      myItem.marker = marker;
+      self.markers.push(marker);
     });
 
-    function addMarkerWithTimeout(myItem, i, timeout){
-      window.setTimeout(function() {
-        var marker = new google.maps.Marker({
-          position: {lat: model.myPlaces[i].lat, lng: model.myPlaces[i].lng},
-          animation: google.maps.Animation.DROP,
-          map: self.map,
-          title: model.myPlaces[i].title
-        });
+  };
 
-        // adding event listener when making markers:
-        marker.addListener('click', function() {
-          self.showData(myItem);
-        });
-        myItem.marker = marker;
-      }, timeout);
+  // Zoom map to fit all markers:
+  // called by self.initMap()
+  this.fitBounds = function(){
+    for( var index in self.markers()){
+      var position = self.markers()[index].position;
+      self.markerBounds.extend(position);
     }
-
-    return deferred.promise();
+    self.map.fitBounds(self.markerBounds);
   };
 
-  this.closeLocation = function(){
-    self.selectedLocation().marker.setAnimation(null);
-    self.selectedLocation(null);
-    self.selectedName(null);
+  // Function to init the basic list data:
+  this.initList = function(){
+    self.createListObservable();
+    self.initFilter();
+    // Resolve the deferred to let initMap know it is safe to create map markers:
+    self.dataReady.resolve();
+
+    self.mapCheck =  setTimeout(function(){
+      self.mapFail(true);
+    }, 2500);
+
   };
 
-  this.init = function(){
-    var d = jQuery.Deferred(),
-    p=d.promise();
-    p.then(
-      self.createMap()
-    ).then(
-      self.createList()
-    ).then(
-      self.update()
-    ).then(
-      self.createMarkers()
-    );
-    d.resolve();
+  // Function to init the map - triggered once Google Maps JS is ready:
+  this.initMap = function(){
+    //stop timeout from occuring:
+    clearTimeout(self.mapCheck);
+    // if 'slow to load' note had appeared we can get rid of it:
+    self.mapFail(false);
+    // Create map straight away:
+    self.createMap();
+    // Wait until data is ready before dropping markers:
+    self.dataReady.done(function(){
+      self.createMarkers();
+      self.fitBounds();
+    });
+
   };
 
-  //call init
-  this.init();
+  //call initList as soon as bindings applied:
+  this.initList();
 };
 
+// assign ViewModel to variable so it can be reached outside of scope
+my = { viewModel: new ViewModel() };
+ko.applyBindings(my.viewModel);
+
+//maps API callback triggers this function once loaded:
 var initApp = function(){
-  // applying bindings after map is initiated as we use Map API functions in the Knockout code
-  ko.applyBindings(new ViewModel());
+  // calls the function to init map content:
+  my.viewModel.initMap();
 };
 
 //foursquare testing:

@@ -1,3 +1,27 @@
+$px: 8px;
+$rem: 1rem;
+$em: 1em;
+$c-main: #4d353e;
+$c-shade: #422a33;
+$c-dark: #322027;
+$c-accent: #ff5ee3;
+$c-link: #02B3E4;
+
+@import "base/reset";
+
+@mixin media-small{
+  @media ( max-width: $px*90){
+    @content;
+  }
+}
+
+html{
+  font-family: "Open Sans", "Roboto", "Helvetica Neue",sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color:  #333;
+}
+
 html, body {
   height: 100%;
   margin: 0;
@@ -5,7 +29,149 @@ html, body {
 }
 #map {
   height: 100%;
+  flex: 1 1 auto;
+  min-width: 300px;
+  display: flex;
+  -webkit-align-items: center;
+          align-items: center;
+  @include media-small{
+    min-height: 300px;
+  }
 }
-.active{
-  background: red;
+
+.app{
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header{
+  background-color: $c-dark;
+  color: $c-accent;
+  &__title{
+    padding: $px*2 0;
+    text-transform: uppercase;
+    text-align: center;
+  }
+}
+
+.app-content{
+  flex: 1 1 auto;
+  display: flex;
+  height: 100%;
+  @include media-small{
+    flex-direction: column;
+  }
+}
+
+.app-sidebar{
+  background-color: #4d353e;
+  color: #fff;
+  width: 20rem;
+  @include media-small{
+    width: auto;
+    order: 1;
+
+  }
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__ul{
+    overflow: auto;
+
+  }
+
+  &__li{
+    padding: $px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    &:hover{
+      color: $c-accent;
+    }
+
+
+    &.is-active{
+      background-color: $c-shade;
+      color: $c-accent;
+    }
+
+  }
+
+  &__filter{
+    padding: $px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+
+    &__input{
+      flex: 1 1 auto;
+      border: none;
+      outline: none;
+      padding: $px;
+      border-radius: 2px;
+      box-shadow: 0 2px 5px 0 rgba(0,0,0,0.3);
+      font-size: inherit;
+    }
+
+  }
+
+}
+
+.location__container{
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  @media ( max-width: $px*50){
+    flex: 1 0 auto;
+  }
+}
+
+.foursquare-content{
+  &--is-loaded{
+    background-color: #fff;
+  }
+  &--is-error p{
+    background-color: red;
+    color: #fff;
+    font-size: 1.3rem;
+    padding: $px $px*2;
+  }
+  &__header{
+    padding: $px $px*2;
+    display: flex;
+    align-items: center;
+    background-color: $c-accent;
+
+    &__text{
+      flex: 1 1 auto;
+    }
+
+  }
+  &__title{
+    font-size: 1.2rem;
+    color: $c-dark;
+  }
+  &__description{
+    color:#fff;
+  }
+  &__thumb{
+    border-radius: 50%;
+  }
+  &__hours{
+    padding: $px $px*2;
+  }
+  &__attribute{
+    padding: $px $px*2;
+    &__link{
+      color: $c-link;
+    }
+  }
+}
+
+.google-maps--is-error{
+  color: #aaa;
+
+  text-align: center;
+  font-size: 1.3rem;
+  padding: $px*2;
 }

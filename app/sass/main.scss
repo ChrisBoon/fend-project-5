@@ -6,6 +6,7 @@ $c-shade: #422a33;
 $c-dark: #322027;
 $c-accent: #ff5ee3;
 $c-link: #02B3E4;
+$c-light-text: #999;
 
 @import "base/reset";
 
@@ -35,7 +36,8 @@ html, body {
   -webkit-align-items: center;
           align-items: center;
   @include media-small{
-    min-height: 300px;
+    min-height: $px*30;
+    flex: 0 1 auto;
   }
 }
 
@@ -70,6 +72,7 @@ html, body {
   @include media-small{
     width: auto;
     order: 1;
+    flex: 1 0 auto;
 
   }
   flex: 0 0 auto;
@@ -121,8 +124,8 @@ html, body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  @media ( max-width: $px*50){
-    flex: 1 0 auto;
+  @include media-small{
+    flex: 0 0 auto;
   }
 }
 
@@ -158,7 +161,20 @@ html, body {
     border-radius: 50%;
   }
   &__hours{
-    padding: $px $px*2;
+    padding: $px 0 0;
+    li{
+      padding: 0 $px*2;
+      display: flex;
+      -webkit-align-items: center;
+              align-items: center;
+          border-bottom: 1px solid #ddd;
+    }
+    h4{
+      font-size: 0.8em;
+      color: $c-light-text;
+      line-height: 1.2;
+      margin-right: 0.5em;
+    }
   }
   &__attribute{
     padding: $px $px*2;
@@ -170,7 +186,6 @@ html, body {
 
 .google-maps--is-error{
   color: #aaa;
-
   text-align: center;
   font-size: 1.3rem;
   padding: $px*2;

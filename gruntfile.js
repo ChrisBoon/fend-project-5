@@ -18,17 +18,11 @@ module.exports = function (grunt) {
 
             scripts: {
                 files: ['app/scripts/custom/**/*.js'],
-                tasks: ['jshint','concat','uglify'],
+                tasks: ['jshint','concat'],
                 options: {
                     spawn: false
                 },
             },
-        },
-
-        wiredep: {
-          task: {
-            src: ['app/**/*.html']
-          }
         },
 
         sass: {
@@ -44,6 +38,7 @@ module.exports = function (grunt) {
                 map: true,
                 processors: [
                     require('autoprefixer')({browsers: ['last 3 versions']}),
+                    require('cssnano')()
                 ]
             },
             dist: {
@@ -63,12 +58,15 @@ module.exports = function (grunt) {
         },
 
         jshint: {
-              myFiles: ['app/scripts/custom/**/*.js']
+            options: {
+                debug: true
+            },
+            myFiles: ['app/scripts/custom/**/*.js']
         },
 
         concat: {
             dist: {
-                src: ['app/scripts/custom/*.js'],
+                src: ['app/scripts/vendor/*.js','app/scripts/custom/*.js'],
                 dest: 'app/scripts/build/app.js'
             }
         },
@@ -99,7 +97,40 @@ module.exports = function (grunt) {
                     }
                 }
             }
+        },
+        copy: {
+            js: {
+                expand: true,
+                cwd: 'app/scripts/build/',
+                src: '*.min.js',
+                dest: 'dist/scripts/'
+            },
+            css: {
+                expand: true,
+                cwd: 'app/',
+                src: 'css/main.css',
+                dest: 'dist/'
+            }
+        },
+        clean: ['dist/'],
+        replace: {
+            dist: {
+                options: {
+                    patterns: [
+                        {
+                            match: /build\/app.js/g,
+                                replacement: function () {
+                                return 'app.min.js';
+                            }
+                        }
+                    ]
+                },
+                files: [
+                    {expand: true, cwd: 'app/', src: '*.html', dest: 'dist/'}
+                ]
+            }
         }
+
     });
 
     // load npm tasks
@@ -111,9 +142,13 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-imagemin');
     grunt.loadNpmTasks('grunt-newer');
     grunt.loadNpmTasks('grunt-contrib-watch');
-    grunt.loadNpmTasks('grunt-wiredep');
     grunt.loadNpmTasks('grunt-browser-sync');
+    grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-replace');
 
     // define default task
-    grunt.registerTask('default', ['wiredep', 'browserSync', 'watch']);
+    grunt.registerTask('default', ['browserSync', 'watch']);
+
+    grunt.registerTask('dist', ['uglify', 'clean', 'copy', 'replace']);
 };

@@ -111,8 +111,6 @@ var ViewModel = function(){
   // In initList we set a timeout on mapCheck for 4s and if maps hasn't loaded we turn this to true.
   // In the html we bind a message to this to display only if true.
   // The message readssaying 'Google Maps is taking longer to load then expected. Keep waiting or try again later.'
-  // We also check this is false before trying to do any map interactions.
-  // This way if the map fails, the rest of the fuctionality still works so users can still see the Foursquare data.
   this.mapFail = ko.observable(false);
 
   this.showApp = ko.observable(false);
@@ -128,7 +126,7 @@ var ViewModel = function(){
   this.showData = function(data){
     // If a location is already open we close it:
     if (self.selectedLocation()) {
-      if( !self.mapFail ){
+      if( self.selectedLocation().marker ){
         self.selectedLocation().marker.setAnimation(null);
       }
     }
@@ -149,7 +147,7 @@ var ViewModel = function(){
     }).done( function(response){
       self.error(false);
       //center map on selected place:
-      if( !self.mapFail ){
+      if( self.selectedLocation().marker ){
         self.map.panTo(self.selectedLocation().marker.getPosition());
         //add the selected places title to infowindow, show it, and bounce the marker:
         self.infowindow.setContent(self.selectedLocation().title());
@@ -159,7 +157,7 @@ var ViewModel = function(){
     })
     .fail( function( xhr, status ) {
       self.closeLocation();
-      if( !self.mapFail ){
+      if( self.selectedLocation().marker ){
         self.infowindow.close();
       }
 
@@ -181,7 +179,7 @@ var ViewModel = function(){
 
   // Function to remove any active location:
   this.closeLocation = function(){
-    if( !self.mapFail ){
+    if( self.selectedLocation().marker ){
       self.selectedLocation().marker.setAnimation(null);
     }
     self.selectedLocation(null);

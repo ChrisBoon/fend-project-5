@@ -1,0 +1,38 @@
+//credit to: http://codepen.io/joogl/pen/dXyNPM
+
+@keyframes spin {
+
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+
+}
+
+.loading-icon {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border: 0.25rem solid $c-dark;
+  border-top-color: $c-accent;
+  display: inline-block;
+  margin: 0 8px;
+
+  -webkit-animation-name: spin;
+  -webkit-animation-duration: 1s;
+  -webkit-animation-iteration-count: infinite;
+
+  animation-name: spin;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+}
+
+.downhill {
+  -webkit-animation-timing-function: cubic-bezier(0.3, 0.1, 0.3, 0.85);
+  animation-timing-function: cubic-bezier(0.3, 0.1, 0.3, 0.85);
+}

@@ -74,14 +74,14 @@ var simplifyTitle = function(str){
 // app viewModel
 var ViewModel = function(){
 
-  // create alias for easy referencing:
+  // Create alias for easy referencing:
   var self = this;
 
-  // set up variables that the map and infowindow will be stored on:
+  // Set up variables that the map and infowindow will be stored on:
   var map;
   var infowindow;
 
-  //keep a reference to all markers so fitBounds can be calculated
+  // Keep a reference to all markers so fitBounds can be calculated
   this.markers = ko.observableArray([]);
   var markerBounds;
 
@@ -100,15 +100,22 @@ var ViewModel = function(){
   // Set up an observable array for storing each place observable:
   this.allPlaces = ko.observableArray([]);
 
-  // filter is bound to the search input.
+  // Filter is bound to the search input.
   //// On load we have an empty string.
   this.searchFor = ko.observable("");
 
-  this.error = ko.observable(null);
+  // If the foursqaure data call throws any erros we pass text to here. The text then displays in the app to tell the user:
+  this.error = ko.observable(false);
+  // We store a variable here for assigning a timeout to so it can easily be set in one function and cancelled in another:
   var mapCheck;
+  // In initList we set a timeout on mapCheck for 4s and if maps hasn't loaded we turn this to true.
+  // In the html we bind a message to this to display only if true.
+  // The message readssaying 'Google Maps is taking longer to load then expected. Keep waiting or try again later.'
+  // We also check this is false before trying to do any map interactions.
+  // This way if the map fails, the rest of the fuctionality still works so users can still see the Foursquare data.
   this.mapFail = ko.observable(false);
 
-
+  this.showApp = ko.observable(false);
 
   // Reusable function used to turn each place in my JSON to a knockout observable
   this.aPlace = function(data) {
@@ -121,7 +128,9 @@ var ViewModel = function(){
   this.showData = function(data){
     // If a location is already open we close it:
     if (self.selectedLocation()) {
-      self.selectedLocation().marker.setAnimation(null);
+      if( !self.mapFail ){
+        self.selectedLocation().marker.setAnimation(null);
+      }
     }
     // We set this location as open:
     self.selectedLocation(data);
@@ -138,19 +147,22 @@ var ViewModel = function(){
         self.selectedPlace(response.response.venue);
       }
     }).done( function(response){
-      self.error(null);
+      self.error(false);
       //center map on selected place:
-      self.map.panTo(self.selectedLocation().marker.getPosition());
-      //add the selected places title to infowindow, show it, and bounce te marker:
-      self.infowindow.setContent(self.selectedLocation().title());
-      self.infowindow.open(self.map, self.selectedLocation().marker);
-      self.selectedLocation().marker.setAnimation(google.maps.Animation.BOUNCE);
+      if( !self.mapFail ){
+        self.map.panTo(self.selectedLocation().marker.getPosition());
+        //add the selected places title to infowindow, show it, and bounce the marker:
+        self.infowindow.setContent(self.selectedLocation().title());
+        self.infowindow.open(self.map, self.selectedLocation().marker);
+        self.selectedLocation().marker.setAnimation(google.maps.Animation.BOUNCE);
+      }
     })
     .fail( function( xhr, status ) {
       self.closeLocation();
-      self.infowindow.close();
-      // self.error(true);
-      console.log(status);
+      if( !self.mapFail ){
+        self.infowindow.close();
+      }
+
       if( status == "timeout" ) {
           self.error("Foursquare could not be reached right now.");
       }
@@ -169,7 +181,9 @@ var ViewModel = function(){
 
   // Function to remove any active location:
   this.closeLocation = function(){
-    self.selectedLocation().marker.setAnimation(null);
+    if( !self.mapFail ){
+      self.selectedLocation().marker.setAnimation(null);
+    }
     self.selectedLocation(null);
     self.selectedPlace(false);
   };
@@ -205,11 +219,15 @@ var ViewModel = function(){
         // get the title and see if it is in the string:
         if (simplifyTitle( item.title()).indexOf(filter) > -1) {
           // If it is we make Marker visible and keep in list
-          item.marker.setVisible(true);
+          if (item.marker) {
+            item.marker.setVisible(true);
+          }
           return true;
         } else {
           //if it is NOT we make Marker invisible and remove name from list
-          item.marker.setVisible(false);
+          if (item.marker) {
+            item.marker.setVisible(false);
+          }
           return false;
         }
       });
@@ -240,7 +258,7 @@ var ViewModel = function(){
   // called by self.initMap()
   this.createMarkers = function(){
 
-    // Loop through each array item witha timeout to add a staggered drop effect:
+    // Loop through each array item:
     self.allPlaces().forEach(function(myItem,i){
       var marker = new google.maps.Marker({
         position: {lat: model.myPlaces[i].lat, lng: model.myPlaces[i].lng},
@@ -273,14 +291,17 @@ var ViewModel = function(){
 
   // Function to init the basic list data:
   this.initList = function(){
+    self.showApp(true);
     self.createListObservable();
     self.initFilter();
     // Resolve the deferred to let initMap know it is safe to create map markers:
     self.dataReady.resolve();
-
+    // From the time we init the list we will allow the map 4 seconds before showing the error message.
+    // Note the error message does suggest it could still load so if connection is slow we haven't aborted it:
+    // Also the rest of the app functionality will work without the map so we don't stop the entire app:
     self.mapCheck =  setTimeout(function(){
-      self.mapFail(true);
-    }, 2500);
+      self.mapFail("Google Maps is taking longer to load then expected. Keep waiting or try again later.");
+    }, 4000);
 
   };
 
@@ -313,7 +334,3 @@ var initApp = function(){
   // calls the function to init map content:
   my.viewModel.initMap();
 };
-
-//foursquare testing:
-
-

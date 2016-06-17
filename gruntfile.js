@@ -148,7 +148,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-replace');
 
     // define default task
-    grunt.registerTask('default', ['browserSync', 'watch']);
+    grunt.registerTask('default', ['sass', 'postcss', 'concat', 'browserSync', 'watch']);
 
     grunt.registerTask('dist', ['uglify', 'clean', 'copy', 'replace']);
 };

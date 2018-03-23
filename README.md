@@ -3,14 +3,14 @@
 ## Instructions
 
 ### To view hosted version GitHub:
-http://chrisboon.github.io/fend-project-5
+http://chrisboon.github.io/frontend-nanodegree-maps
 
 ### To view a hosted version where Google Maps fails to load (due to a misspelled URL, but intention is to simulate server failure):
-http://chrisboon.github.io/fend-project-5/index2.html
+http://chrisboon.github.io/frontend-nanodegree-maps/index2.html
 
 
 ### Github repo:
-https://github.com/ChrisBoon/fend-project-5
+https://github.com/ChrisBoon/frontend-nanodegree-maps
 
 ### To view locally once downloaded:
 For minified, compressed, and optimized files view the 'dist' folder.
